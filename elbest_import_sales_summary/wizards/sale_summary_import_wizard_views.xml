@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--Sale summary import wizard view form-->
+    <record model="ir.ui.view" id="sale_summary_import_wizard_view_form">
+        <field name="name">sale.summary.import.wizard.form.view</field>
+        <field name="model">sale.summary.import.wizard</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form string="Import Sale Summary">
+                <header>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <div class="alert alert-primary text-center" col="2" colspan="2" role="alert" states="uploading">
+                            <div class="mb-2">
+                                Upload your <b>txt</b> file
+                            </div>
+                            <field name="file_name" invisible="1"/>
+                            <field name="file" filename="file_name"/>
+                        </div>
+                    </group>
+                    <separator name="imported_lines" string="Imported Lines" states="uploaded"/>
+                    <div class="alert alert-primary text-center" col="2" colspan="2" role="alert" states="uploaded">
+                        <b>Following lines can be imported</b>
+                    </div>
+                    <field name="line_ids" states="uploaded">
+                        <tree editable="bottom" create="false">
+                            <field name="select"/>
+                            <field name="product_id"/>
+                            <field name="quantity"/>
+                            <field name="price"/>
+                            <field name="currency_id" invisible="1"/>
+                        </tree>
+                        <form>
+                            <group>
+                                <group>
+                                    <field name="product_id"/>
+                                    <field name="quantity"/>
+                                </group>
+                                <group>
+                                    <field name="price"/>
+                                    <field name="currency_id" invisible="1"/>
+                                </group>
+                            </group>
+                        </form>
+                    </field>
+                </sheet>
+                <footer>
+                    <button string="Import" name="action_import" type="object" class="oe_highlight" states="uploading"/>
+                    <button string="Confirm" name="action_done" type="object" class="oe_highlight" states="uploaded"/>
+                    <button string="Discard" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!--Action for view sale summary import wizard-->
+    <record id="action_view_sale_summary_import_wizard" model="ir.actions.act_window">
+        <field name="name">Import Sale Summary</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">sale.summary.import.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="sale_summary_import_wizard_view_form"/>
+        <field name="target">new</field>
+    </record>
+
+    <!--Menuitem for sale summary import wizard-->
+    <menuitem id="sale_order_import_menu_root"
+              parent="sale.sale_menu_root"
+              name="Import"
+              sequence="20">
+
+        <menuitem id="menu_sale_summary_import"
+                  name="Import Sale Summary"
+                  action="action_view_sale_summary_import_wizard"
+                  sequence="10"/>
+
+    </menuitem>
+
+</odoo>

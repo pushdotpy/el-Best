@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--Sale summary import logs form view-->
+    <record model="ir.ui.view" id="sale_summary_import_logs_view_form">
+        <field name="name">sale.summary.import.logs.view.form</field>
+        <field name="model">sale.summary.import.logs</field>
+        <field name="arch" type="xml">
+            <form string="Sale Summary Import Logs" create="false" delete="false" edit="false">
+                <header>
+                    <button name="action_open_import_missing_lines_wizard" string="Import Missed Lines"
+                            type="object" class="oe_highlight" data-hotkey="o" title="Import Missed Lines"
+                            attrs="{'invisible': [('not_imported_lines', '=', False)]}"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_sale_order" type="object"
+                                    class="oe_stat_button" icon="fa-bars"
+                                    attrs="{'invisible': [('sale_count','=', 0)]}">
+                                <div class="o_form_field o_stat_info">
+                                    <span class="o_stat_text">
+                                        <field name="sale_count"/>
+                                        <span> Sale Orders</span>
+                                    </span>
+                                </div>
+                            </button>
+                    </div>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="date"/>
+                            <field name="sale_ids" widget="many2many_tags"/>
+                        </group>
+                        <group>
+                            <field name="not_imported_lines"/>
+                            <field name="sale_count" invisible="1"/>
+                        </group>
+                    </group>
+                    <separator name="imported_lines" string="Imported Lines"/>
+                    <field name="line_ids">
+                        <tree editable="bottom">
+                            <field name="product_id"/>
+                            <field name="quantity"/>
+                            <field name="price"/>
+                            <field name="sale_order_id"/>
+                            <field name="sale_order_status" string="SO Status"/>
+                            <field name="currency_id" invisible="1"/>
+                        </tree>
+                        <form>
+                            <group>
+                                <group>
+                                    <field name="product_id"/>
+                                    <field name="quantity"/>
+                                </group>
+                                <group>
+                                    <field name="price"/>
+                                    <field name="currency_id" invisible="1"/>
+                                </group>
+                            </group>
+                        </form>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!--Sale summary import logs view tree-->
+    <record model="ir.ui.view" id="sale_summary_import_logs_view_tree">
+        <field name="name">sale.summary.import.logs.view.tree</field>
+        <field name="model">sale.summary.import.logs</field>
+        <field name="arch" type="xml">
+            <tree string="Sale Summary Import Logs" create="false" delete="false" edit="false">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="sale_ids" widget="many2many_tags"/>
+            </tree>
+        </field>
+    </record>
+
+    <!--Sale summary report view action-->
+    <record model="ir.actions.act_window" id="action_view_sale_summary_import_logs">
+        <field name="name">Sale Summary Import Logs</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">sale.summary.import.logs</field>
+        <field name="view_mode">tree,form</field>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No records found!
+            </p>
+            <p>
+                Imported summary import logs will be updated in here
+            </p>
+        </field>
+    </record>
+
+    <!--Sale summary import logs menuitem-->
+    <menuitem id="menu_sale_summary_import_logs"
+              sequence="20"
+              parent="elbest_import_sales_summary.sale_order_import_menu_root"
+              name="Sale Summary Import Logs"
+              action="action_view_sale_summary_import_logs"/>
+
+</odoo>
