@@ -21,6 +21,15 @@
                             <field name="file" filename="file_name"/>
                         </div>
                     </group>
+                    <group states="uploaded" string="Transfer Details">
+                        <group>
+                            <field name="reconciliation_number"/>
+                            <field name="reconciliation_date"/>
+                        </group>
+                        <group>
+                            <field name="station_number"/>
+                        </group>
+                    </group>
                     <separator name="imported_lines" string="Imported Lines" states="uploaded"/>
                     <div class="alert alert-primary text-center" col="2" colspan="2" role="alert" states="uploaded">
                         <b>Following lines can be imported</b>

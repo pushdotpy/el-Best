@@ -23,16 +23,19 @@
                                         <span> Sale Orders</span>
                                     </span>
                                 </div>
-                            </button>
+                        </button>
                     </div>
                     <div class="oe_title">
-                        <label for="name"/>
-                        <h1><field name="name"/></h1>
+                        <label for="file_name"/>
+                        <h1><field name="file_name"/></h1>
                     </div>
                     <group>
                         <group>
                             <field name="date"/>
+                            <field name="name" string="Sequence"/>
                             <field name="sale_ids" widget="many2many_tags"/>
+                            <field name="reconciliation_date"/>
+                            <field name="station_number"/>
                         </group>
                         <group>
                             <field name="not_imported_lines"/>
@@ -73,7 +76,8 @@
         <field name="model">sale.summary.import.logs</field>
         <field name="arch" type="xml">
             <tree string="Sale Summary Import Logs" create="false" delete="false" edit="false">
-                <field name="name"/>
+                <field name="file_name"/>
+                <field name="name" string="sequence"/>
                 <field name="date"/>
                 <field name="sale_ids" widget="many2many_tags"/>
             </tree>

@@ -3,7 +3,7 @@
 from urllib.request import urlopen
 
 from odoo import models, fields, api, _
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 
 
 class SaleSummaryImportWizardViews(models.TransientModel):
@@ -12,6 +12,9 @@ class SaleSummaryImportWizardViews(models.TransientModel):
 
     file = fields.Binary('File', help="File to upload")
     file_name = fields.Char('File Name')
+    reconciliation_number = fields.Char('Reconciliation Number', readonly=True)
+    reconciliation_date = fields.Char('Reconciliation Date', readonly=True)
+    station_number = fields.Char('Station Number', readonly=True)
     state = fields.Selection([
         ('uploading', 'Uploading'),
         ('uploaded', 'Uploaded'),
@@ -28,6 +31,8 @@ class SaleSummaryImportWizardViews(models.TransientModel):
             raise UserError(_('Please attach a file to upload'))
         if self.file_name[-3:] != 'txt':
             raise UserError(_('Invalid file, Please upload .txt format file'))
+        if self.env['sale.summary.import.logs'].sudo().search([('file_name', '=', self.file_name.split('_')[1])]):
+            raise ValidationError(f'{self.file_name} - File already existing in the system.')
         try:
             # Read file
             file_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url') + '/web/content/sale.summary.import.wizard/%s/file/%s' % (self.id, self.file_name)
@@ -56,7 +61,13 @@ class SaleSummaryImportWizardViews(models.TransientModel):
             } for x in product_summary if self.env['product.product'].sudo().search([('default_code', '=', x[0])], limit=1).id]
             not_imported_lines = '\n'.join([f'{x} - Reason: Product not found in the system' for x in product_summary if not self.env['product.product'].sudo().search([('default_code', '=', x[0])], limit=1).id])
             self.env['sale.summary.import.wizard.line'].create(import_data)
-            self.sudo().write({'state': 'uploaded', 'not_imported_lines': not_imported_lines})
+            self.sudo().write({
+                'state': 'uploaded',
+                'not_imported_lines': not_imported_lines,
+                'reconciliation_number': self.file_name.split('_')[1],
+                'reconciliation_date': text_data[8].strip(),
+                'station_number': self.file_name.split('_')[0]
+            })
         except Exception as e:
             raise UserError(_(f'.txt file format not supported. Please check and try again with the correct txt file. \n\nError\n{e}'))
         # open wizard with imported data
@@ -95,8 +106,11 @@ class SaleSummaryImportWizardViews(models.TransientModel):
         if self._context.get('active_model', False) != 'sale.summary.import.logs':
             # create import log
             log_id = self.env['sale.summary.import.logs'].create({
+                'file_name': self.reconciliation_number,
                 'sale_ids': [(4, so.id)],
                 'not_imported_lines': self.not_imported_lines + f'\n{not_imported_lines}',
+                'reconciliation_date': self.reconciliation_date,
+                'station_number': self.station_number,
                 'line_ids': [(0, 0, {
                     'product_id': x.product_id.id,
                     'quantity': x.quantity,
@@ -142,7 +156,11 @@ class SaleSummaryImportWizardViews(models.TransientModel):
                 picking.action_assign()
                 picking.action_set_quantities_to_reservation()
                 picking.action_confirm()
-                picking.button_validate()
+                for line in picking.move_ids_without_package:
+                    line.update({
+                        'quantity_done': line.product_uom_qty
+                    })
+                picking.with_context(skip_backorder=True, skip_sms=True).button_validate()
             sale_id._create_invoices()
             for invoice in sale_id.invoice_ids:
                 invoice.action_post()

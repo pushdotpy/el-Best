@@ -9,9 +9,12 @@ class SaleSummaryImportLogs(models.Model):
     _description = 'Sale Summary Import Logs'
 
     name = fields.Char(string="Name", required=True, copy=False, readonly=True, default=lambda self: _('New'))
+    file_name = fields.Char(string="Reconciliation Number", required=True, copy=False, readonly=True)
     sale_ids = fields.Many2many('sale.order', string='Sale Orders')
     line_ids = fields.One2many('sale.summary.import.log.line', 'log_id', string='Sale Summary Import Lines')
-    date = fields.Datetime('Date', default=fields.Datetime.now)
+    date = fields.Datetime('Imported Date', default=fields.Datetime.now)
+    reconciliation_date = fields.Char('Reconciliation Date', readonly=True)
+    station_number = fields.Char('Station Number', readonly=True)
     sale_count = fields.Integer('Sale Count', compute='_compute_sale_count')
     not_imported_lines = fields.Text('Not Imported Products', readonly=True)
 
@@ -72,6 +75,12 @@ class SaleSummaryImportLogs(models.Model):
         else:
             action['domain'] = [('id', 'in', self.sale_ids.ids)]
         return action
+
+    def _cron_fetch_data_from_google_drive(self):
+        """
+        @private - cron function for fetch data from Google Drive
+        """
+        pass
 
 
 class SaleSummaryImportLogLine(models.Model):

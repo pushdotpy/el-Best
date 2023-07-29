@@ -10,7 +10,7 @@
     "description": """
 Import sale summary data to odoo
 """,
-    "version": "16.0.1.0.1",
+    "version": "16.0.1.0.3",
     "depends": [
         'base',
         'sale',
