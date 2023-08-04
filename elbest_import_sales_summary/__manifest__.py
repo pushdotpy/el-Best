@@ -10,16 +10,18 @@
     "description": """
 Import sale summary data to odoo
 """,
-    "version": "16.0.1.0.3",
+    "version": "16.0.1.0.4",
     "depends": [
         'base',
         'sale',
         'sale_management',
+        'stock',
     ],
     "data": [
         'data/data.xml',
         'security/ir.model.access.csv',
         'wizards/sale_summary_import_wizard_views.xml',
+        'views/google_drive_configuration_views.xml',
         'views/sale_summary_import_logs_views.xml',
     ],
     "application": False,

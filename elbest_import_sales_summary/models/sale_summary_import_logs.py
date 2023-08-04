@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 
+import datetime
+
 from odoo import models, fields, api, _
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 
 
 class SaleSummaryImportLogs(models.Model):
@@ -17,6 +19,26 @@ class SaleSummaryImportLogs(models.Model):
     station_number = fields.Char('Station Number', readonly=True)
     sale_count = fields.Integer('Sale Count', compute='_compute_sale_count')
     not_imported_lines = fields.Text('Not Imported Products', readonly=True)
+    zip_file_name = fields.Char('Zip File Name', compute='_compute_zip_file_name', store=True)
+    source_location_id = fields.Many2one('stock.location', 'Location')  # TODO: add source location to delivery order
+
+    @api.depends('file_name', 'name', 'source_location_id')
+    def _compute_zip_file_name(self):
+        """
+        @private - compute file name for Google Drive zip
+        """
+        for rec in self:
+            try:
+                name = rec.file_name.strip()
+                station_number = rec.station_number
+                rec.update({
+                    'zip_file_name': str((station_number, f'20{name[0:2]}-{name[2:4]}-{name[4:6].lstrip("0")}.zip'))
+                })
+            except Exception as e:
+                rec.update({
+                    'zip_file_name': False
+                })
+                continue
 
     def action_open_import_missing_lines_wizard(self):
         """
@@ -80,7 +102,11 @@ class SaleSummaryImportLogs(models.Model):
         """
         @private - cron function for fetch data from Google Drive
         """
-        pass
+        drive_config = self.env['google.drive.configuration'].sudo().search([('active', '=', True)], limit=1)
+        if not drive_config:
+            raise ValidationError(_(f'No google drive configuration found for company {self.env.company.name}!'))
+        else:
+            drive_config.fetch_sale_summary_data()
 
 
 class SaleSummaryImportLogLine(models.Model):

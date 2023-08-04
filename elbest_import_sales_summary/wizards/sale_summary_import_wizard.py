@@ -27,32 +27,38 @@ class SaleSummaryImportWizardViews(models.TransientModel):
         """
         @public - action for import sale summary report file
         """
-        if not self.file:
+        scheduled_action_summary_data = self._context.get('scheduled_action_summary_data', False)
+        if not scheduled_action_summary_data and not self.file:
             raise UserError(_('Please attach a file to upload'))
         if self.file_name[-3:] != 'txt':
             raise UserError(_('Invalid file, Please upload .txt format file'))
         if self.env['sale.summary.import.logs'].sudo().search([('file_name', '=', self.file_name.split('_')[1])]):
             raise ValidationError(f'{self.file_name} - File already existing in the system.')
         try:
-            # Read file
-            file_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url') + '/web/content/sale.summary.import.wizard/%s/file/%s' % (self.id, self.file_name)
-            i = 0
-            indexing = []
-            text_data = []
-            for line in urlopen(file_url):
-                try:
-                    line = line.decode('utf-8').replace('\r\n', '')
-                    if line != '':
-                        text_data.append(line)
-                        if 'VENTES D\'ARTICLE A 7 CHARACTERS' in line:
-                            indexing.append(i + 1)
-                        if 'STATISTIQUES DE QUART' in line:
-                            indexing.append(i)
-                        i += 1
-                except:
-                    continue
-            # writing data
-            product_summary = [[d for d in x.split(' ') if d != ''] for x in text_data[indexing[0]: indexing[1]]]
+            if not scheduled_action_summary_data:
+                # Read file
+                file_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url') + '/web/content/sale.summary.import.wizard/%s/file/%s' % (self.id, self.file_name)
+                i = 0
+                indexing = []
+                text_data = []
+                for line in urlopen(file_url):
+                    try:
+                        line = line.decode('utf-8').replace('\r\n', '')
+                        if line != '':
+                            text_data.append(line)
+                            if 'VENTES D\'ARTICLE A 7 CHARACTERS' in line:
+                                indexing.append(i + 1)
+                            if 'STATISTIQUES DE QUART' in line:
+                                indexing.append(i)
+                            i += 1
+                    except:
+                        continue
+                # writing data
+                product_summary = [[d for d in x.split(' ') if d != ''] for x in text_data[indexing[0]: indexing[1]]]
+                reconciliation_date = text_data[8].strip()
+            else:
+                product_summary = scheduled_action_summary_data
+                reconciliation_date = self._context.get('reconciliation_date', False)
             import_data = [{
                 'product_id': self.env['product.product'].sudo().search([('default_code', '=', x[0])], limit=1).id,
                 'quantity': float(x[1]),
@@ -65,24 +71,27 @@ class SaleSummaryImportWizardViews(models.TransientModel):
                 'state': 'uploaded',
                 'not_imported_lines': not_imported_lines,
                 'reconciliation_number': self.file_name.split('_')[1],
-                'reconciliation_date': text_data[8].strip(),
+                'reconciliation_date': reconciliation_date,
                 'station_number': self.file_name.split('_')[0]
             })
         except Exception as e:
             raise UserError(_(f'.txt file format not supported. Please check and try again with the correct txt file. \n\nError\n{e}'))
-        # open wizard with imported data
-        view = self.env.ref('elbest_import_sales_summary.sale_summary_import_wizard_view_form')
-        return {
-            'name': _('Sales Summary Import'),
-            'type': 'ir.actions.act_window',
-            'view_mode': 'form',
-            'res_model': 'sale.summary.import.wizard',
-            'views': [(view.id, 'form')],
-            'view_id': view.id,
-            'res_id': self.id,
-            'target': 'new',
-            'context': {},
-        }
+        if not scheduled_action_summary_data:
+            # open wizard with imported data
+            view = self.env.ref('elbest_import_sales_summary.sale_summary_import_wizard_view_form')
+            return {
+                'name': _('Sales Summary Import'),
+                'type': 'ir.actions.act_window',
+                'view_mode': 'form',
+                'res_model': 'sale.summary.import.wizard',
+                'views': [(view.id, 'form')],
+                'view_id': view.id,
+                'res_id': self.id,
+                'target': 'new',
+                'context': {},
+            }
+        else:
+            self.action_done()
 
     def action_done(self):
         """
@@ -131,19 +140,20 @@ class SaleSummaryImportWizardViews(models.TransientModel):
                 'sale_ids': [(4, x.id) for x in (log_id.sale_ids + so)],
                 'not_imported_lines': self.not_imported_lines
             })
-        # open import log
-        view = self.env.ref('elbest_import_sales_summary.sale_summary_import_logs_view_form')
-        return {
-            'name': _('Sales Summary Import Logs'),
-            'type': 'ir.actions.act_window',
-            'view_mode': 'form',
-            'res_model': 'sale.summary.import.logs',
-            'views': [(view.id, 'form')],
-            'view_id': view.id,
-            'res_id': log_id.id,
-            'target': 'current',
-            'context': {},
-        }
+        if not self._context.get('scheduled_action_summary_data', False):
+            # open import log
+            view = self.env.ref('elbest_import_sales_summary.sale_summary_import_logs_view_form')
+            return {
+                'name': _('Sales Summary Import Logs'),
+                'type': 'ir.actions.act_window',
+                'view_mode': 'form',
+                'res_model': 'sale.summary.import.logs',
+                'views': [(view.id, 'form')],
+                'view_id': view.id,
+                'res_id': log_id.id,
+                'target': 'current',
+                'context': {},
+            }
 
     def confirm_sale_related_records(self, sale_id):
         """

@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--Google Drive configuration form view-->
+    <record model="ir.ui.view" id="google_drive_configuration_view_form">
+        <field name="name">google.drive.configuration.view.form</field>
+        <field name="model">google.drive.configuration</field>
+        <field name="arch" type="xml">
+            <form string="Google Drive Configuration">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="gdrive_client_id" string="Client ID" required="1"/>
+                            <field name="gdrive_client_secret" string="Client Secret" password="True" required="1"/>
+                            <field name="gdrive_redirect_uri" string="Redirect URI"/>
+                            <field name="gdrive_access_token" password="True" invisible="1"/>
+                            <field name="gdrive_refresh_token" password="True" invisible="1"/>
+                            <field name="gdrive_token_validity" invisible="1"/>
+                            <field name="is_google_drive_token_generated" invisible="1"/>
+                            <field name="google_drive_folder_id" required="1"/>
+                            <field name="active" widget="boolean_toggle"/>
+                            <field name="company_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="company_id" readonly="1"/>
+                            <div>
+                                <div attrs="{'invisible': [('is_google_drive_token_generated', '=', False)]}">
+                                    <i class="text-success fa fa-check"/>
+                                    Refresh token set
+                                </div>
+                                <div attrs="{'invisible': [('is_google_drive_token_generated', '=', True)]}">
+                                    <i class="fa fa-exclamation-triangle text-warning"/>
+                                    No refresh token set
+                                </div>
+                            </div>
+                            <div>
+                                <div attrs="{'invisible': [('is_google_drive_token_generated', '=', True)]}">
+                                    <button class="btn btn-link"
+                                            name="action_get_gdrive_auth_code"
+                                            type="object">
+                                        <i class="fa fa-arrow-right"/>
+                                        Setup Token
+                                    </button>
+                                </div>
+                                <div attrs="{'invisible': [('is_google_drive_token_generated', '=', False)]}">
+                                    <button class="btn btn-link"
+                                            name="action_get_gdrive_auth_code"
+                                            type="object">
+                                        <i class="fa fa-arrow-right"/>
+                                        Reset Token
+                                    </button>
+                                </div>
+                            </div>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!--Google Drive configuration view tree-->
+    <record model="ir.ui.view" id="google_drive_configuration_view_tree">
+        <field name="name">google.drive.configuration.view.tree</field>
+        <field name="model">google.drive.configuration</field>
+        <field name="arch" type="xml">
+            <tree string="Google Drive Configuration">
+                <field name="name"/>
+            </tree>
+        </field>
+    </record>
+
+    <!--Google Drive configuration view action-->
+    <record model="ir.actions.act_window" id="action_view_google_drive_configuration">
+        <field name="name">Google Drive Configuration</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">google.drive.configuration</field>
+        <field name="view_mode">tree,form</field>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No records found!
+            </p>
+            <p>
+                Create new configuration from Create button on top left corner
+            </p>
+        </field>
+    </record>
+
+    <!--Menuitem Google Drive configuration-->
+    <menuitem id="menu_google_drive" name="Google Drive" parent="base.menu_custom" sequence="10"/>
+    <menuitem id="menu_google_drive_configuration" parent="menu_google_drive" name="Google Drive Configurations" action="action_view_google_drive_configuration"/>
+
+</odoo>
