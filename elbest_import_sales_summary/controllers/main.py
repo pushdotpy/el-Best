@@ -6,7 +6,7 @@ from odoo import http
 from odoo.http import request
 
 
-class OnedriveAuth(http.Controller):
+class GoogleDriveAuth(http.Controller):
 
     @http.route('/google_drive/authentication', type='http', auth="public")
     def gdrive_oauth2callback(self, **kw):
