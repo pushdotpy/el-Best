@@ -123,9 +123,7 @@ class GoogleDriveConfiguration(models.Model):
         """
         Generate onedrive tokens from authorization code
         """
-
         base_url = request.env['ir.config_parameter'].get_param('web.base.url')
-
         headers = {"content-type": "application/x-www-form-urlencoded"}
         data = {
             'code': authorize_code,
@@ -154,16 +152,19 @@ class GoogleDriveConfiguration(models.Model):
         @public - check and get sale summary files from the Google Drive folder
         """
         try:
-            # get files
+            # Check token validity and create a new refresh token
             if self.gdrive_token_validity <= fields.Datetime.now():
                 self.generate_gdrive_refresh_token()
             headers = {"Authorization": "Bearer %s" % self.gdrive_access_token}
+            # Get folders
             query = f"'{self.google_drive_folder_id}' in parents"
             folders = requests.get("https://www.googleapis.com/drive/v3/files?q=%s" % query, headers=headers)
             _logger.info('Received folders from Google Drive API')
             folders = folders.json()['files']
+            # Check for imported files
             imported_zip_files = ['_'.join(eval(x['zip_file_name'])) for x in self.env['sale.summary.import.logs'].sudo().search_read([('zip_file_name', '!=', False)], ['zip_file_name']) if (False not in eval(x['zip_file_name']))]
             for folder in folders:
+                # get summary text zipfile
                 folder_id = folder['id']
                 folder_query = f"'{folder_id}' in parents"
                 files = requests.get("https://www.googleapis.com/drive/v3/files?q=%s" % folder_query, headers=headers)
@@ -171,6 +172,7 @@ class GoogleDriveConfiguration(models.Model):
                 files = [x for x in files.json()['files'] if x['mimeType'] == 'application/x-zip-compressed' and '{folder_name}_{zip_name}'.format(folder_name=folder['name'], zip_name=x['name']) not in imported_zip_files]
                 for file in files:
                     try:
+                        # Get read and add file data to the system
                         file_content = requests.get(f"https://www.googleapis.com/drive/v3/files/{file['id']}?alt=media", headers=headers)
                         _logger.info(f'Received text file from drive file {folder_id}')
                         zf = zipfile.ZipFile(io.BytesIO(file_content.content), "r")

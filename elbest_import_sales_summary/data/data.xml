@@ -21,8 +21,8 @@
         <!--Cron for fetch data from Google Drive-->
         <record id="ir_cron_fetch_from_google_drive" model="ir.cron">
             <field name="name">Import: Sale data from Google-Drive</field>
-            <field name="interval_number">15</field>
-            <field name="interval_type">minutes</field>
+            <field name="interval_number">3</field>
+            <field name="interval_type">hours</field>
             <field name="numbercall">-1</field>
             <field name="doall" eval="False"/>
             <field name="model_id" ref="elbest_import_sales_summary.model_sale_summary_import_logs"/>

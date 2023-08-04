@@ -20,9 +20,20 @@ class SaleSummaryImportLogs(models.Model):
     sale_count = fields.Integer('Sale Count', compute='_compute_sale_count')
     not_imported_lines = fields.Text('Not Imported Products', readonly=True)
     zip_file_name = fields.Char('Zip File Name', compute='_compute_zip_file_name', store=True)
-    source_location_id = fields.Many2one('stock.location', 'Location')  # TODO: add source location to delivery order
+    picking_type_id = fields.Many2one('stock.picking.type', string="Operation Type", compute='_compute_picking_type', store=False)
 
-    @api.depends('file_name', 'name', 'source_location_id')
+    # @api.depends('file_name', 'name', 'station_number')
+    def _compute_picking_type(self):
+        """
+        @private: get operation type for the station number
+        """
+        for rec in self:
+            warehouse_id = rec.env['stock.warehouse'].search([('name', '=', rec.station_number)], limit=1)
+            rec.update({
+                'picking_type_id': warehouse_id.out_type_id.id
+            })
+
+    @api.depends('file_name', 'name', 'station_number')
     def _compute_zip_file_name(self):
         """
         @private - compute file name for Google Drive zip
@@ -65,6 +76,9 @@ class SaleSummaryImportLogs(models.Model):
                     'price': float(x[3]),
                 }) for x in lines_can_import],
                 'default_not_imported_lines': '\n'.join(not_imported_lines),
+                'default_reconciliation_number': self.file_name,
+                'default_reconciliation_date': self.reconciliation_date,
+                'default_station_number': self.station_number,
             },
         }
 

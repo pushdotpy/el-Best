@@ -99,10 +99,14 @@ class SaleSummaryImportWizardViews(models.TransientModel):
         """
         selected_lines = self.line_ids.filtered(lambda m: m.select)
         not_imported_lines = '\n'.join([str([y.product_id.default_code, f'{y.quantity}', f'{y.currency_id.symbol}', f'{y.price}']) + ' - Reason: User deselected' for y in (self.line_ids - selected_lines)])
+        warehouse_id = self.env['stock.warehouse'].search([('name', '=', self.station_number)], limit=1)
+        if not warehouse_id:
+            raise ValidationError(_(f'Warehouse not found for the station_number {self.station_number}'))
         so = self.env['sale.order'].create({
             'partner_id': self.env.ref('elbest_import_sales_summary.partner_summary_import').id,
             'partner_invoice_id': self.env.ref('elbest_import_sales_summary.partner_summary_import').id,
             'state': 'draft',
+            'warehouse_id': warehouse_id.id,
             'order_line': [
                 (0, 0, {
                     'name': x.product_id.name,
